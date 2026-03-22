@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Typing Quiz</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Recorder</title>
 
 <style>
 body {
@@ -10,26 +11,27 @@ body {
     color: white;
     font-family: 'Courier New', monospace;
     display: flex;
-    flex-direction: column;
-    align-items: center;
     justify-content: center;
+    align-items: center;
     height: 100vh;
 }
 
+/* CONTAINER */
 .container {
+    width: 95%;
+    max-width: 420px;
     text-align: center;
 }
 
 /* INPUTS */
 input {
     display: block;
-    margin: 10px;
+    margin: 8px auto;
     padding: 10px;
-    width: 300px;
+    width: 90%;
     background: black;
     border: 1px solid white;
     color: white;
-    outline: none;
 }
 
 /* BUTTON */
@@ -39,35 +41,37 @@ button {
     color: black;
     border: none;
     cursor: pointer;
-    margin-top: 10px;
 }
 
 /* OUTPUT */
 .output {
-    margin-top: 30px;
-    font-size: 20px;
-    text-shadow: 0 0 10px white, 0 0 20px white;
+    margin-top: 20px;
+    font-size: 18px;
+    text-shadow: 0 0 10px white;
     min-height: 150px;
 }
 
-/* OPTION ALIGNMENT 🔥 */
+/* OPTIONS */
 .option {
     display: flex;
     align-items: flex-start;
-    margin-top: 12px;
+    margin-top: 10px;
     text-align: left;
-    width: 400px;
 }
 
 .label {
-    width: 30px;
-    flex-shrink: 0;
+    width: 25px;
     font-weight: bold;
 }
 
 .text {
     flex: 1;
-    word-wrap: break-word;
+}
+
+/* DOWNLOAD BUTTON */
+#downloadBtn {
+    display: none;
+    margin-top: 15px;
 }
 </style>
 </head>
@@ -76,88 +80,110 @@ button {
 
 <div class="container">
 
-    <!-- FORM -->
-    <div id="formBox">
-        <h2>Create Quiz</h2>
+<div id="formBox">
+    <h3>Create Quiz</h3>
 
-        <input type="text" id="question" placeholder="Enter Question">
-        <input type="text" id="opt1" placeholder="Option 1">
-        <input type="text" id="opt2" placeholder="Option 2">
-        <input type="text" id="opt3" placeholder="Option 3">
-        <input type="text" id="opt4" placeholder="Option 4">
+    <input id="question" placeholder="Question">
+    <input id="opt1" placeholder="Option 1">
+    <input id="opt2" placeholder="Option 2">
+    <input id="opt3" placeholder="Option 3">
+    <input id="opt4" placeholder="Option 4">
 
-        <button onclick="startTyping()">Show Quiz</button>
-    </div>
+    <button onclick="startQuiz()">Show Quiz</button>
+</div>
 
-    <!-- OUTPUT -->
-    <div class="output" id="output"></div>
+<div id="quizArea" class="output"></div>
+<button id="downloadBtn">Download Video</button>
 
 </div>
 
 <script>
-function typeText(element, text, speed = 40, callback = null) {
+let mediaRecorder;
+let chunks = [];
+
+function typeText(el, text, speed = 40, cb) {
     let i = 0;
-    function typing() {
+    function t() {
         if (i < text.length) {
-            element.innerHTML += text.charAt(i);
-            i++;
-            setTimeout(typing, speed);
-        } else if (callback) {
-            callback();
-        }
+            el.innerHTML += text[i++];
+            setTimeout(t, speed);
+        } else if (cb) cb();
     }
-    typing();
+    t();
 }
 
-function startTyping() {
-    // Hide form
+async function startRecording() {
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true
+    });
+
+    mediaRecorder = new MediaRecorder(stream);
+    chunks = [];
+
+    mediaRecorder.ondataavailable = e => chunks.push(e.data);
+
+    mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: "video/webm" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.getElementById("downloadBtn");
+        a.style.display = "inline-block";
+        a.onclick = () => {
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "quiz_recording.webm";
+            link.click();
+        };
+    };
+
+    mediaRecorder.start();
+}
+
+function stopRecording() {
+    if (mediaRecorder) mediaRecorder.stop();
+}
+
+function startQuiz() {
     document.getElementById("formBox").style.display = "none";
 
-    const output = document.getElementById("output");
-    output.innerHTML = "";
-
-    let question = document.getElementById("question").value;
-    let options = [
-        document.getElementById("opt1").value,
-        document.getElementById("opt2").value,
-        document.getElementById("opt3").value,
-        document.getElementById("opt4").value
+    const q = document.getElementById("question").value;
+    const opts = [
+        opt1.value, opt2.value, opt3.value, opt4.value
     ];
 
-    let qElement = document.createElement("div");
-    output.appendChild(qElement);
+    const area = document.getElementById("quizArea");
+    area.innerHTML = "";
 
-    typeText(qElement, question, 40, () => {
-        showOptions(options, 0);
-    });
+    startRecording(); // 🎬 start recording
+
+    let qEl = document.createElement("div");
+    area.appendChild(qEl);
+
+    typeText(qEl, q, 40, () => showOptions(opts, 0));
+    
+    // ⏱ stop after 5 sec
+    setTimeout(stopRecording, 5000);
 }
 
-function showOptions(options, index) {
-    if (index >= options.length) return;
+function showOptions(opts, i) {
+    if (i >= opts.length) return;
+    if (!opts[i].trim()) return showOptions(opts, i + 1);
 
-    if (options[index].trim() === "") {
-        showOptions(options, index + 1);
-        return;
-    }
+    let div = document.createElement("div");
+    div.className = "option";
 
-    let optElement = document.createElement("div");
-    optElement.classList.add("option");
+    let l = document.createElement("span");
+    l.className = "label";
+    l.innerHTML = String.fromCharCode(65 + i) + ".";
 
-    let label = document.createElement("span");
-    label.classList.add("label");
-    label.innerHTML = String.fromCharCode(65 + index) + ".";
+    let t = document.createElement("span");
+    t.className = "text";
 
-    let text = document.createElement("span");
-    text.classList.add("text");
+    div.appendChild(l);
+    div.appendChild(t);
+    document.getElementById("quizArea").appendChild(div);
 
-    optElement.appendChild(label);
-    optElement.appendChild(text);
-
-    document.getElementById("output").appendChild(optElement);
-
-    typeText(text, options[index], 30, () => {
-        showOptions(options, index + 1);
-    });
+    typeText(t, opts[i], 30, () => showOptions(opts, i + 1));
 }
 </script>
 
