@@ -3,64 +3,62 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Quiz Recorder</title>
+<title>Mobile Quiz</title>
+
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
 <style>
 body {
+    margin: 0;
     background: black;
     color: white;
     font-family: 'Courier New', monospace;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
 }
 
-/* CONTAINER */
+/* MAIN CONTAINER */
 .container {
-    width: 95%;
-    max-width: 420px;
-    text-align: center;
+    width: 100%;
+    padding: 15px;
+    box-sizing: border-box;
 }
 
 /* INPUTS */
 input {
-    display: block;
-    margin: 8px auto;
-    padding: 10px;
-    width: 90%;
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
     background: black;
     border: 1px solid white;
     color: white;
+    font-size: 16px;
 }
 
 /* BUTTON */
 button {
-    padding: 10px 20px;
+    width: 100%;
+    padding: 12px;
     background: white;
     color: black;
     border: none;
-    cursor: pointer;
+    font-size: 16px;
+    margin-top: 10px;
 }
 
-/* OUTPUT */
+/* QUIZ AREA */
 .output {
     margin-top: 20px;
     font-size: 18px;
     text-shadow: 0 0 10px white;
-    min-height: 150px;
 }
 
 /* OPTIONS */
 .option {
     display: flex;
-    align-items: flex-start;
-    margin-top: 10px;
-    text-align: left;
+    margin-top: 12px;
 }
 
 .label {
-    width: 25px;
+    width: 30px;
     font-weight: bold;
 }
 
@@ -68,10 +66,9 @@ button {
     flex: 1;
 }
 
-/* DOWNLOAD BUTTON */
+/* DOWNLOAD */
 #downloadBtn {
     display: none;
-    margin-top: 15px;
 }
 </style>
 </head>
@@ -83,7 +80,7 @@ button {
 <div id="formBox">
     <h3>Create Quiz</h3>
 
-    <input id="question" placeholder="Question">
+    <input id="question" placeholder="Enter Question">
     <input id="opt1" placeholder="Option 1">
     <input id="opt2" placeholder="Option 2">
     <input id="opt3" placeholder="Option 3">
@@ -93,14 +90,12 @@ button {
 </div>
 
 <div id="quizArea" class="output"></div>
-<button id="downloadBtn">Download Video</button>
+
+<button id="downloadBtn" onclick="downloadImage()">Save to Gallery</button>
 
 </div>
 
 <script>
-let mediaRecorder;
-let chunks = [];
-
 function typeText(el, text, speed = 40, cb) {
     let i = 0;
     function t() {
@@ -112,57 +107,24 @@ function typeText(el, text, speed = 40, cb) {
     t();
 }
 
-async function startRecording() {
-    const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true
-    });
-
-    mediaRecorder = new MediaRecorder(stream);
-    chunks = [];
-
-    mediaRecorder.ondataavailable = e => chunks.push(e.data);
-
-    mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: "video/webm" });
-        const url = URL.createObjectURL(blob);
-
-        const a = document.getElementById("downloadBtn");
-        a.style.display = "inline-block";
-        a.onclick = () => {
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = "quiz_recording.webm";
-            link.click();
-        };
-    };
-
-    mediaRecorder.start();
-}
-
-function stopRecording() {
-    if (mediaRecorder) mediaRecorder.stop();
-}
-
 function startQuiz() {
     document.getElementById("formBox").style.display = "none";
 
-    const q = document.getElementById("question").value;
-    const opts = [
-        opt1.value, opt2.value, opt3.value, opt4.value
-    ];
+    const q = question.value;
+    const opts = [opt1.value, opt2.value, opt3.value, opt4.value];
 
     const area = document.getElementById("quizArea");
     area.innerHTML = "";
-
-    startRecording(); // 🎬 start recording
 
     let qEl = document.createElement("div");
     area.appendChild(qEl);
 
     typeText(qEl, q, 40, () => showOptions(opts, 0));
-    
-    // ⏱ stop after 5 sec
-    setTimeout(stopRecording, 5000);
+
+    // after animation → enable download
+    setTimeout(() => {
+        document.getElementById("downloadBtn").style.display = "block";
+    }, 4000);
 }
 
 function showOptions(opts, i) {
@@ -184,6 +146,16 @@ function showOptions(opts, i) {
     document.getElementById("quizArea").appendChild(div);
 
     typeText(t, opts[i], 30, () => showOptions(opts, i + 1));
+}
+
+/* 📸 Screenshot instead of recording */
+function downloadImage() {
+    html2canvas(document.getElementById("quizArea")).then(canvas => {
+        let link = document.createElement("a");
+        link.download = "quiz.png";
+        link.href = canvas.toDataURL();
+        link.click();
+    });
 }
 </script>
 
