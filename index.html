@@ -3,9 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mobile Quiz</title>
-
-<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<title>Smart Quiz</title>
 
 <style>
 body {
@@ -15,22 +13,23 @@ body {
     font-family: 'Courier New', monospace;
 }
 
-/* MAIN CONTAINER */
+/* CONTAINER */
 .container {
     width: 100%;
     padding: 15px;
     box-sizing: border-box;
 }
 
-/* INPUTS */
-input {
+/* TEXTAREA */
+textarea {
     width: 100%;
+    height: 150px;
     padding: 12px;
-    margin: 8px 0;
     background: black;
     border: 1px solid white;
     color: white;
     font-size: 16px;
+    resize: none;
 }
 
 /* BUTTON */
@@ -44,14 +43,14 @@ button {
     margin-top: 10px;
 }
 
-/* QUIZ AREA */
+/* OUTPUT */
 .output {
     margin-top: 20px;
     font-size: 18px;
     text-shadow: 0 0 10px white;
 }
 
-/* OPTIONS */
+/* OPTIONS ALIGNMENT */
 .option {
     display: flex;
     margin-top: 12px;
@@ -65,11 +64,6 @@ button {
 .text {
     flex: 1;
 }
-
-/* DOWNLOAD */
-#downloadBtn {
-    display: none;
-}
 </style>
 </head>
 
@@ -78,20 +72,19 @@ button {
 <div class="container">
 
 <div id="formBox">
-    <h3>Create Quiz</h3>
+    <h3>Enter Quiz (Line by Line)</h3>
 
-    <input id="question" placeholder="Enter Question">
-    <input id="opt1" placeholder="Option 1">
-    <input id="opt2" placeholder="Option 2">
-    <input id="opt3" placeholder="Option 3">
-    <input id="opt4" placeholder="Option 4">
+    <textarea id="quizInput" placeholder="Type like this:
+What is the capital of India?
+Mumbai
+New Delhi
+Kolkata
+Chennai"></textarea>
 
     <button onclick="startQuiz()">Show Quiz</button>
 </div>
 
 <div id="quizArea" class="output"></div>
-
-<button id="downloadBtn" onclick="downloadImage()">Save to Gallery</button>
 
 </div>
 
@@ -110,8 +103,11 @@ function typeText(el, text, speed = 40, cb) {
 function startQuiz() {
     document.getElementById("formBox").style.display = "none";
 
-    const q = question.value;
-    const opts = [opt1.value, opt2.value, opt3.value, opt4.value];
+    const input = document.getElementById("quizInput").value.trim();
+    const lines = input.split("\n").filter(line => line.trim() !== "");
+
+    const question = lines[0];
+    const options = lines.slice(1);
 
     const area = document.getElementById("quizArea");
     area.innerHTML = "";
@@ -119,43 +115,27 @@ function startQuiz() {
     let qEl = document.createElement("div");
     area.appendChild(qEl);
 
-    typeText(qEl, q, 40, () => showOptions(opts, 0));
-
-    // after animation → enable download
-    setTimeout(() => {
-        document.getElementById("downloadBtn").style.display = "block";
-    }, 4000);
+    typeText(qEl, question, 40, () => showOptions(options, 0));
 }
 
-function showOptions(opts, i) {
-    if (i >= opts.length) return;
-    if (!opts[i].trim()) return showOptions(opts, i + 1);
+function showOptions(options, i) {
+    if (i >= options.length) return;
 
     let div = document.createElement("div");
     div.className = "option";
 
-    let l = document.createElement("span");
-    l.className = "label";
-    l.innerHTML = String.fromCharCode(65 + i) + ".";
+    let label = document.createElement("span");
+    label.className = "label";
+    label.innerHTML = String.fromCharCode(65 + i) + ".";
 
-    let t = document.createElement("span");
-    t.className = "text";
+    let text = document.createElement("span");
+    text.className = "text";
 
-    div.appendChild(l);
-    div.appendChild(t);
+    div.appendChild(label);
+    div.appendChild(text);
     document.getElementById("quizArea").appendChild(div);
 
-    typeText(t, opts[i], 30, () => showOptions(opts, i + 1));
-}
-
-/* 📸 Screenshot instead of recording */
-function downloadImage() {
-    html2canvas(document.getElementById("quizArea")).then(canvas => {
-        let link = document.createElement("a");
-        link.download = "quiz.png";
-        link.href = canvas.toDataURL();
-        link.click();
-    });
+    typeText(text, options[i], 30, () => showOptions(options, i + 1));
 }
 </script>
 
